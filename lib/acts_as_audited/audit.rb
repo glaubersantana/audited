@@ -12,13 +12,16 @@ class Audit < ActiveRecord::Base
   belongs_to :auditable, :polymorphic => true
   belongs_to :user, :polymorphic => true
   belongs_to :auditable_parent, :polymorphic => true
-  
+
   before_create :set_version_number, :set_audit_user
-  
+
   serialize :changes
 
   cattr_accessor :audited_class_names
   self.audited_class_names = Set.new
+
+  named_scope :limit,       lambda { |limit| { :limit => limit } }
+  named_scope :descending,  :order => 'version DESC'
 
   def self.audited_classes
     self.audited_class_names.map(&:constantize)
@@ -89,7 +92,7 @@ class Audit < ActiveRecord::Base
     end
     block_given? ? result : attributes
   end
-  
+
   def self.assign_revision_attributes(record, attributes)
     attributes.each do |attr, val|
       if record.respond_to?("#{attr}=")
